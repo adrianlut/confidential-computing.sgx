@@ -57,7 +57,7 @@ bool protected_fs_file::flush()
 		sgx_thread_mutex_unlock(&mutex);
 		return false;
 	}
-	
+
 	result = internal_flush();
 	if (result == false)
 	{
@@ -71,6 +71,27 @@ bool protected_fs_file::flush()
 	return result;
 }
 
+bool protected_fs_file::sync() {
+	bool result = flush();
+
+	if (!result) {
+		return result;
+	}
+
+	int32_t result32 = sgx_thread_mutex_lock(&mutex);
+
+	int32_t msync_result = u_sgxprotectedfs_sync(file_addr, real_file_size);
+	if (msync_result != 0) {
+		if (file_status == SGX_FILE_STATUS_OK) {
+			file_status = SGX_FILE_STATUS_WRITE_TO_DISK_FAILED;
+		}
+		result = false;
+	}
+
+	sgx_thread_mutex_unlock(&mutex);
+
+	return result;
+}
 
 bool protected_fs_file::internal_flush()
 {
@@ -536,19 +557,19 @@ bool protected_fs_file::update_all_data_and_mht_nodes()
 bool protected_fs_file::update_meta_data_node()
 {
 	sgx_status_t status;
-	
+
 	// randomize a new key, saves the key _id_ in the meta data plain part
 	if (generate_random_meta_data_key() != true)
 	{
 		// last error already set
 		return false;
 	}
-		
+
 	// encrypt meta data encrypted part, also updates the gmac in the meta data plain part
-	status = sgx_rijndael128GCM_encrypt(&cur_key, 
-										(const uint8_t*)&encrypted_part_plain, sizeof(meta_data_encrypted_t), (uint8_t*)&file_meta_data.encrypted_part, 
-										empty_iv, SGX_AESGCM_IV_SIZE, 
-										NULL, 0, 
+	status = sgx_rijndael128GCM_encrypt(&cur_key,
+										(const uint8_t*)&encrypted_part_plain, sizeof(meta_data_encrypted_t), (uint8_t*)&file_meta_data.encrypted_part,
+										empty_iv, SGX_AESGCM_IV_SIZE,
+										NULL, 0,
 										&file_meta_data.plain_part.meta_data_gmac);
 	if (status != SGX_SUCCESS)
 	{

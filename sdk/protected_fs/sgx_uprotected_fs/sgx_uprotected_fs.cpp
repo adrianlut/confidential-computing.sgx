@@ -56,7 +56,7 @@
 int8_t u_sgxprotectedfs_check_if_file_exists(const char* filename)
 {
 	struct stat stat_st;
-	
+
 	memset(&stat_st, 0, sizeof(struct stat));
 
 	if (filename == NULL || strnlen(filename, 1) == 0)
@@ -64,8 +64,8 @@ int8_t u_sgxprotectedfs_check_if_file_exists(const char* filename)
 		DEBUG_PRINT("filename is NULL or empty\n");
 		return -EINVAL;
 	}
-	
-	return (stat(filename, &stat_st) == 0); 
+
+	return (stat(filename, &stat_st) == 0);
 }
 
 
@@ -227,6 +227,26 @@ int32_t u_sgxprotectedfs_file_unmap(uint8_t* file_addr, int64_t file_size)
 	return 0;
 }
 
+int32_t u_sgxprotectedfs_file_sync(uint8_t* file_addr, int64_t file_size) {
+	int result = 0;
+
+	if (file_addr == NULL)
+	{
+		DEBUG_PRINT("file address is NULL\n");
+		return -1;
+	}
+
+	result = msync(file_addr, file_size, MS_SYNC);
+	if (result != 0)
+	{
+		int err = errno;
+		DEBUG_PRINT("msync returned %d, errno: %d\n", result, err);
+		return err ? err : -1;
+	}
+
+	return 0;
+}
+
 
 int32_t u_sgxprotectedfs_remove(const char* filename)
 {
@@ -245,7 +265,7 @@ int32_t u_sgxprotectedfs_remove(const char* filename)
 			return errno;
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -325,7 +345,7 @@ int32_t u_sgxprotectedfs_do_file_recovery(const char* filename, const char* reco
 	uint8_t* recovery_node = NULL;
 	uint32_t i = 0;
 
-	do 
+	do
 	{
 		if (filename == NULL || strnlen(filename, 1) == 0)
 		{
@@ -338,7 +358,7 @@ int32_t u_sgxprotectedfs_do_file_recovery(const char* filename, const char* reco
 			DEBUG_PRINT("recovery filename is NULL or empty\n");
 			return (int32_t)NULL;
 		}
-	
+
 		recovery_file = fopen(recovery_filename, "rb");
 		if (recovery_file == NULL)
 		{
@@ -356,7 +376,7 @@ int32_t u_sgxprotectedfs_do_file_recovery(const char* filename, const char* reco
 		}
 
 		file_size = ftello(recovery_file);
-	
+
 		if ((result = fseeko(recovery_file, 0, SEEK_SET)) != 0)
 		{
 			DEBUG_PRINT("fseeko returned %d\n", result);
@@ -399,7 +419,7 @@ int32_t u_sgxprotectedfs_do_file_recovery(const char* filename, const char* reco
 				err = ferror(recovery_file);
 				if (err != 0)
 					ret = err;
-				else if (errno != 0) 
+				else if (errno != 0)
 					ret = errno;
 				break;
 			}
@@ -420,7 +440,7 @@ int32_t u_sgxprotectedfs_do_file_recovery(const char* filename, const char* reco
 				err = ferror(source_file);
 				if (err != 0)
 					ret = err;
-				else if (errno != 0) 
+				else if (errno != 0)
 					ret = errno;
 				break;
 			}
@@ -460,6 +480,6 @@ int32_t u_sgxprotectedfs_do_file_recovery(const char* filename, const char* reco
 		result = remove(recovery_filename);
 		assert(result == 0);
 	}
-	
+
 	return ret;
 }
