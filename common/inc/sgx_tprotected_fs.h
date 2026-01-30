@@ -204,6 +204,18 @@ int32_t SGXAPI sgx_fset_parallel_level(SGX_FILE* stream, uint32_t max_threads_nu
 int32_t SGXAPI sgx_fflush(SGX_FILE* stream);
 
 
+/* sgx_fflush
+ *  Purpose: force msync. Added by Adrian Lutsch.
+ *
+ *  Parameters:
+ *      stream - [IN] the file handle (opened with sgx_fopen or sgx_fopen_auto_key)
+ *
+ *  Return value:
+ *     int32_t  - result, 0 on success, 1 in case of an error - check sgx_ferror for error code
+*/
+int32_t SGXAPI sgx_fsync(SGX_FILE* stream);
+
+
 /* sgx_ferror
  *  Purpose: get the latest operation error code (see c++ ferror documentation for more details).
  *

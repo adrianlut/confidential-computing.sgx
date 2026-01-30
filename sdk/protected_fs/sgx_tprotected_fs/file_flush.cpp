@@ -78,10 +78,17 @@ bool protected_fs_file::sync() {
 		return result;
 	}
 
-	int32_t result32 = sgx_thread_mutex_lock(&mutex);
+        if (const int32_t result32 = sgx_thread_mutex_lock(&mutex);
+            result32 != 0) {
+		last_error = result32;
+		file_status = SGX_FILE_STATUS_MEMORY_CORRUPTED;
+		return false;
+	}
 
-	int32_t msync_result = u_sgxprotectedfs_sync(file_addr, real_file_size);
-	if (msync_result != 0) {
+	int32_t msync_result;
+        if (const sgx_status_t ret = u_sgxprotectedfs_file_sync(
+                &msync_result, file_addr, real_file_size);
+            ret != SGX_SUCCESS || msync_result != 0) {
 		if (file_status == SGX_FILE_STATUS_OK) {
 			file_status = SGX_FILE_STATUS_WRITE_TO_DISK_FAILED;
 		}

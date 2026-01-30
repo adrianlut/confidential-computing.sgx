@@ -155,6 +155,14 @@ int32_t sgx_fflush(SGX_FILE* stream)
 	return file->flush(/*false*/) == true ? 0 : EOF;
 }
 
+int32_t sgx_fsync(SGX_FILE* stream) {
+	if (stream == NULL)
+		return EOPNOTSUPP;
+
+	protected_fs_file* file = (protected_fs_file*)stream;
+	return file->sync(/*false*/) == true ? 0 : EOF;
+}
+
 
 int32_t sgx_ferror(SGX_FILE* stream)
 {
@@ -171,7 +179,7 @@ int32_t sgx_feof(SGX_FILE* stream)
 {
 	if (stream == NULL)
 		return -1;
-	
+
 	protected_fs_file* file = (protected_fs_file*)stream;
 
 	return ((file->get_eof() == true) ? 1 : 0);
